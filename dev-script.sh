@@ -58,7 +58,7 @@ function install_ssrpanel(){
 	echo "$MY_PING $MY" >> ping.pl
 	fileinfo=`sort -V ping.pl|sed -n '1p'|awk '{print $2}'`
 	if [ "$fileinfo" == "$GIT" ];then
-		Download='https://raw.githubusercontent.com/marisn2017/ssrpanel/master'
+		Download='https://raw.githubusercontent.com/spiderman5408/ssrpanel/master'
 	else
 		Download='https://coding.net/u/marisn/p/ssrpanel/git/raw/master'
 	fi
@@ -82,7 +82,7 @@ function install_ssrpanel(){
 	#ssrpanel_new_ver=$(wget --no-check-certificate -qO- https://api.github.com/repos/ssrpanel/SSRPanel/releases | grep -o '"tag_name": ".*"' |head -n 1| sed 's/"//g;s/v//g' | sed 's/tag_name: //g')
 	#wget -c --no-check-certificate "https://github.com/ssrpanel/SSRPanel/archive/${ssrpanel_new_ver}.tar.gz"
 	#tar zxvf "${ssrpanel_new_ver}.tar.gz" && cd SSRPanel-* && mv * .[^.]* ..&& cd /home/wwwroot/default && rm -rf "${ssrpanel_new_ver}.tar.gz"
-	git clone https://github.com/marisn2017/ssrpanel_resource.git tmp && mv tmp/.git . && rm -rf tmp && git reset --hard
+	git clone https://github.com/spiderman5408/ssrpanel_resource.git tmp && mv tmp/.git . && rm -rf tmp && git reset --hard
 	#替换数据库配置
 	cp .env.example .env
 	wget -N -P /usr/local/php/etc/ "${Download}/php.ini"
@@ -191,7 +191,7 @@ function install_ssr(){
 	echo "$LIB_PING $LIB" >> ping.pl
 	libAddr=`sort -V ping.pl|sed -n '1p'|awk '{print $2}'`
 	if [ "$libAddr" == "$GIT" ];then
-		libAddr='https://raw.githubusercontent.com/marisn2017/ss-panel-v3-mod_Uim/master/libsodium-1.0.17.tar.gz'
+		libAddr='https://raw.githubusercontent.com/spiderman5408/ss-panel-v3-mod_Uim/master/libsodium-1.0.17.tar.gz'
 	else
 		libAddr='https://download.libsodium.org/libsodium/releases/libsodium-1.0.17.tar.gz'
 	fi
@@ -205,14 +205,14 @@ function install_ssr(){
 	yum -y install python-setuptools
 	easy_install supervisor
     cd /root
-	wget https://raw.githubusercontent.com/marisn2017/ssrpanel/master/shadowsocksr.zip
+	wget https://raw.githubusercontent.com/spiderman5408/ssrpanel/master/shadowsocksr.zip
 	unzip shadowsocksr.zip
 	cd shadowsocksr
 	./initcfg.sh
 	chmod 777 *
-	wget -N -P /root/shadowsocksr/ https://raw.githubusercontent.com/marisn2017/ssrpanel/master/user-config.json
-	wget -N -P /root/shadowsocksr/ https://raw.githubusercontent.com/marisn2017/ssrpanel/master/userapiconfig.py
-	wget -N -P /root/shadowsocksr/ https://raw.githubusercontent.com/marisn2017/ssrpanel/master/usermysql.json
+	wget -N -P /root/shadowsocksr/ https://raw.githubusercontent.com/spiderman5408/ssrpanel/master/user-config.json
+	wget -N -P /root/shadowsocksr/ https://raw.githubusercontent.com/spiderman5408/ssrpanel/master/userapiconfig.py
+	wget -N -P /root/shadowsocksr/ https://raw.githubusercontent.com/spiderman5408/ssrpanel/master/usermysql.json
 	sed -i "s#Userip#${Userip}#" /root/shadowsocksr/usermysql.json
 	sed -i "s#Dbuser#${Dbuser}#" /root/shadowsocksr/usermysql.json
 	sed -i "s#Dbport#${Dbport}#" /root/shadowsocksr/usermysql.json
@@ -281,10 +281,10 @@ function install_node(){
 	reboot
 }
 function install_BBR(){
-     wget --no-check-certificate https://github.com/teddysun/across/raw/master/bbr.sh&&chmod +x bbr.sh&&./bbr.sh
+     wget --no-check-certificate https://github.com/spiderman5408/across/raw/master/bbr.sh&&chmod +x bbr.sh&&./bbr.sh
 }
 function install_RS(){
-     wget -N --no-check-certificate https://github.com/91yun/serverspeeder/raw/master/serverspeeder.sh && bash serverspeeder.sh
+     wget -N --no-check-certificate https://github.com/spiderman5408/serverspeeder/raw/master/serverspeeder.sh && bash serverspeeder.sh
 }
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
