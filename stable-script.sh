@@ -79,10 +79,10 @@ function install_ssrpanel(){
 	cd default
 	rm -rf index.html
 	#获取git最新released版文件 适用于生产环境
-	#ssrpanel_new_ver=$(wget --no-check-certificate -qO- https://api.github.com/repos/marisn2017/ssrpanel_resource/releases | grep -o '"tag_name": ".*"' |head -n 1| sed 's/"//g;s/v//g' | sed 's/tag_name: //g')
-	wget -c --no-check-certificate "https://github.com/spiderman5408/ssrpanel_resource/archive/V4.8.0.tar.gz"
-	tar zxvf "V4.8.0.tar.gz" && cd ssrpanel_resource-* && mv * .[^.]* ..&& cd /home/wwwroot/default && rm -rf "V4.8.0.tar.gz"
-	#git clone https://github.com/marisn2017/ssrpanel_resource.git tmp && mv tmp/.git . && rm -rf tmp && git reset --hard
+	ssrpanel_new_ver=$(wget --no-check-certificate -qO- https://api.github.com/repos/marisn2017/ssrpanel_resource/releases | grep -o '"tag_name": ".*"' |head -n 1| sed 's/"//g;s/v//g' | sed 's/tag_name: //g')
+	#wget -c --no-check-certificate "https://github.com/spiderman5408/ssrpanel_resource/archive/V4.8.0.tar.gz"
+	#tar zxvf "V4.8.0.tar.gz" && cd ssrpanel_resource-* && mv * .[^.]* ..&& cd /home/wwwroot/default && rm -rf "V4.8.0.tar.gz"
+	git clone https://github.com/marisn2017/ssrpanel_resource.git tmp && mv tmp/.git . && rm -rf tmp && git reset --hard
 	#替换数据库配置
 	cp .env.example .env
 	wget -N -P /usr/local/php/etc/ "${Download}/php.ini"
