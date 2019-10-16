@@ -286,6 +286,199 @@ function install_BBR(){
 function install_RS(){
      wget -N --no-check-certificate https://github.com/spiderman5408/serverspeeder/raw/master/serverspeeder.sh && bash serverspeeder.sh
 }
+Install_Ssrpanel_Web_to_Bt()
+{
+    Echo_Yellow "此脚本为ssrpanel对接宝塔，请确认你已经认真看了搭建前的教程？"
+	read -p "y/n?" ABCD
+	if [[ "$ABCD" != "y" ]];then
+	Echo_Red "教程地址:https://sybk.tw/archives/commercial-version-of-oneclick-script-has-been-released.html"
+	exit 0;
+	fi
+	clear
+	echo -e "欢迎使用 [\033[34m ssrpanel 宝塔快速部署工具 \033[0m]"
+	echo "----------------------------------------------------------------------------"
+	echo -e "请注意这个要求：宝塔版本=\033[31m 5.9 \033[0m,php版本=\033[31m 7.1\033[0m ！"
+	echo "----------------------------------------------------------------------------"
+	echo -e "\033[1;5;33m请在搭建前认真看清楚搭建所需要的环境，请勿直接搭建\033[0m"
+	echo "----------------------------------------------------------------------------"
+	sleep 2
+	read -p "请输入宝塔面板添加的网站域名：(请不要修改添加之后的默认地址，只输入域名即可)" Input_Web
+	# if [["$Input_Web" == ""]];then
+		# Echo_Red "请勿回车"
+		# exit 0;
+	# fi
+	#read -p "请输入网站目录(eg:/www/wwwroot/www.baidu.com)[此配置很重要,错误导致将搭建失败]" Input_MU
+	read -p "请输入宝塔面板添加的MySQL用户名：" Input_Dbuser
+	Input_Dbuser=${Input_Dbuser:-"ssrpanel"}
+	read -p "请输入宝塔面板添加的MySQL密码：" Input_Dbpwd
+	Input_Dbpwd=${Input_Dbpwd:-"root"}
+	sleep 1
+	echo "请等待系统自动操作......"
+	yum update -y
+	yum install epel-* -y
+	yum install gcc  gcc-c++ unzip zip   -y 
+	vphp='7.1'
+	version='71'
+	Download_speed_test
+	echo "正在安装fileinfo到服务器......";
+	if [ ! -d "/www/server/php/71/src/ext/fileinfo" ];then
+	wget -O ext-71.zip https://raw.githubusercontent.com/spiderman5408/donation_shell/master/ext-71.zip
+	unzip -o ext-71.zip -d /www/server/php/71/ > /dev/null
+	rm -f ext-71.zip
+	fi
+	cd /www/server/php/71/
+	mv ext-71 ext
+	cd /www/server/php/71/ext/fileinfo
+	/www/server/php/71/bin/phpize
+	./configure --with-php-config=/www/server/php/71/bin/php-config
+	make && make install
+	echo -e " extension = \"fileinfo.so\"\n" >> /www/server/php/71/etc/php.ini
+	service php-fpm-71 reload
+	echo '==============================================='
+	echo 'fileinfo安装完成!'
+	sleep 1
+	echo "正在安装依赖环境......";
+	sleep 2
+	cd /www/wwwroot/${Input_Web}
+	rm -rf index.html 404.html
+	#下载官方源码
+	git clone https://github.com/spiderman5408/ssrpanel_resource.git tmp && mv tmp/.git . && rm -rf tmp && git reset --hard
+	chown -R root:root *
+	chmod -R 755 *
+	chown -R www:www storage
+	sed -i 's/proc_open,//g' /www/server/php/71/etc/php.ini
+	sed -i 's/system,//g' /www/server/php/71/etc/php.ini
+	sed -i 's/proc_get_status,//g' /www/server/php/71/etc/php.ini 
+	sed -i 's/putenv,//g' /www/server/php/71/etc/php.ini    
+	cd /www/wwwroot/${Input_Web}
+    cp .env.example .env
+	sed -i '/DB_DATABASE/c \DB_DATABASE='${Input_Dbuser}'' .env
+	sed -i '/DB_USERNAME/c \DB_USERNAME='${Input_Dbuser}'' .env
+	sed -i '/DB_PASSWORD/c \DB_PASSWORD='${Input_Dbpwd}'' .env
+	mysql -u${Input_Dbuser} -p${Input_Dbpwd} ${Input_Dbuser} < /www/wwwroot/${Input_Web}/sql/db.sql >/dev/null 2>&1
+	wget https://getcomposer.org/installer -O composer.phar
+	php composer.phar
+	php composer.phar install
+	php artisan key:generate
+	clear
+	chown -R www:www storage/
+	chmod -R 777 storage/
+	sleep 3
+	#修改伪静态以及默认路径
+	sed -i "s/\/www\/wwwroot\/$Input_Web/\/www\/wwwroot\/$Input_Web\/public/g" /www/server/panel/vhost/nginx/${Input_Web}.conf
+	echo '
+	location / {
+	  try_files $uri $uri/ /index.php$is_args$args;
+	  }
+	' >/www/server/panel/vhost/rewrite/${Input_Web}.conf
+	echo "正在重启php&Nginx服务..."
+	service php-fpm-71 reload
+	service nginx reload
+	echo "----------------------------------------------------------------------------"
+	echo "部署完成，请打开http://$Input_Web即可浏览"
+	echo "默认用户名&密码：admin   123456 第一次登陆请务必到后台修改密码！"
+	echo "如果打不开站点，请到宝塔面板中软件管理重启nginx和php7.1"
+	echo "这个原因触发几率<10%，原因是修改配置后需要重启Nginx服务和php服务才能正常运行"
+	echo "----------------------------------------------------------------------------"
+}
+
+Install_Ssrpanel_Web()
+{
+    clear
+    Echo_Green "Start configuring the site parameters..."
+	read -p "设置数据库密码[回车默认为root]: " DB_PASS
+	DB_PASS=${DB_PASS:-"root"}
+	Echo_Green "你设置的密码为 ${DB_PASS}"
+	echo -e "\033[1;5;31m即将开始搭建网站环境，此过程较耗时，请耐心等待...\033[0m"
+	sleep 5
+    if [[ `ps -ef | grep nginx |grep -v grep | wc -l` -ge 1 ]];then
+	Echo_Red "提示本机存有nginx环境，跳过环境搭建"
+	mkdir /data/wwwroot/default/
+	else
+	Install_Oneinstack
+	cd /root/oneinstack && rm -rf addons.sh
+	wget -N -P /root/oneinstack/ --no-check-certificate ${Download}/addons.sh  >/dev/null 2>&1
+		if [[ ! -f "/root/oneinstack/addons.sh" ]];then
+		wget -N -P /root/oneinstack/ --no-check-certificate https://raw.githubusercontent.com/spiderman5408/donation_shell/master/addons.sh
+		echo "fileinfo环境未搭建" > /root/error.log
+		fi
+	chmod +x addons.sh && ./addons.sh
+	fi
+	clear
+	echo -e "\033[1;5;31m即将开始安装所需依赖...\033[0m"
+	sleep 2
+	${PM} install unzip zip git -y >/dev/null 2>&1
+	echo -e "\033[1;5;31m即将开始安装WEB环境...\033[0m"
+	#进入网站目录
+	cd /data/wwwroot/default/ 
+	#删除首页静态文件
+	rm -rf index.html 
+	#测试节点ping
+	Download_speed_test
+	#下载官方源码
+	if [[ ! -d "/data/wwwroot/default/config/" ]];then
+	git clone https://github.com/spiderman5408/ssrpanel_resource.git tmp && mv tmp/.git . && rm -rf tmp && git reset --hard
+	fi
+	#修改源码权限
+	chown -R root:root *
+	chmod -R 777 *
+	chown -R www:www storage
+	#修改网站配置文件
+	# wget -N -P /data/wwwroot/default/config/ -c --no-check-certificate "https://blog.67cc.cn/shell/config_new.conf"  >/dev/null 2>&1
+	# cd /data/wwwroot/default/config/
+    # mv config_new.conf .config.php && chmod 755 .config.php
+	echo -e "\033[1;5;31m即将开始下载修改网站配置...\033[0m"
+	cp .env.example .env
+	sed -i '/DB_PASSWORD/c \DB_PASSWORD='${DB_PASS}'' .env
+	#修改nginx php配置
+	wget -N -P  /usr/local/nginx/conf/ --no-check-certificate ${Download}/nginx.conf  >/dev/null 2>&1
+	wget -N -P /usr/local/php/etc/ --no-check-certificate ${Download}/php.ini  >/dev/null 2>&1
+	#重启nginx
+	service nginx restart
+	echo -e "\033[1;5;31m即将开始导入数据库...\033[0m"
+	#导入数据
+mysql -hlocalhost -uroot -p${DB_PASS} <<EOF
+create database ssrpanel;
+use ssrpanel;
+source /data/wwwroot/default/sql/db.sql;
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '${DB_PASS}' WITH GRANT OPTION;
+flush privileges;
+EOF
+	#进入网站目录
+	echo -e "\033[1;5;31m即将开始安装网站所需依赖...\033[0m"
+	cd /data/wwwroot/default/ 
+	#安装依赖
+	wget https://getcomposer.org/installer -O composer.phar
+	php composer.phar
+	php composer.phar install
+	php artisan key:generate
+	chown -R www:www storage/
+	chmod -R 755 storage/
+	#设置phpMyAdmin权限
+	chmod -R 755 /data/wwwroot/default/phpMyAdmin/
+	service nginx restart
+    service php-fpm restart
+	echo -e "\033[1;5;31m即将开始创建监控...\033[0m"
+	#创建监控
+	${PM} -y install vixie-cron crontabs
+	#rm -rf /var/spool/cron/root
+	echo "* * * * * php /data/wwwroot/default/artisan schedule:run >> /dev/null 2>&1" > /var/spool/cron/root
+	echo -e "\033[1;5;31m即将开始设置防火墙...\033[0m"
+	#设置iptables 
+	iptables -I INPUT 4 -p tcp -m state --state NEW -m tcp --dport 3306 -j ACCEPT
+	iptables -I INPUT 4 -p tcp -m state --state NEW -m tcp --dport 888 -j ACCEPT
+	iptables -I INPUT 4 -p tcp -m state --state NEW -m tcp --dport 80 -j ACCEPT
+	iptables -I INPUT 4 -p tcp -m state --state NEW -m tcp --dport 22 -j ACCEPT
+	if [[ ${PM}  == "yum" ]];then
+	/sbin/service crond restart #重启cron
+	service iptables save #保存iptables规则
+	elif [[ ${PM}  == "apt-get" ]];then
+	/etc/init.d/cron restart #重启cron
+	iptables-save > /etc/iptables.up.rules #保存iptables规则
+	else
+	Echo_Red "Error saving iptables rule and cron."
+	fi
+}
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 ulimit -c 0
@@ -296,13 +489,14 @@ sleep 2
 echo "#############################################################################"
 echo "#                      欢迎使用一键安装ssrpanel和节点脚本。                 #"
 echo "#请选择您想要搭建的脚本:                                                    #"
-echo "#1.  一键安装ssrpanel前端面板(不包括节点)                                   #"
+echo "#1.  宝塔环境下搭建ssrpanel前端面板(不包括节点)                                   #"
 echo "#2.  一键安装ssrpanel节点(可单独搭建)                                       #"
 echo "#3.  一键搭建BBR加速                                                        #"
 echo "#4.  一键搭建锐速加速                                                       #"
 echo "#5.  ssrpanel官方升级脚本(可能没什么luan用)                                 #"
 echo "#6.  日志分析（仅支持单机单节点）                                           #" 
 echo "#7.  一键更改数据库密码(仅适用于已搭建前端)                                 #" 
+echo "#8.  单独搭建ssrpanel                                 #" 
 echo "#                                PS:建议请先搭建加速再搭建ssrpanel相关。    #"
 echo "#                                     此脚本仅适用于Centos 7. X 64位 系统   #"
 echo "#############################################################################"
@@ -310,7 +504,7 @@ echo
 read num
 if [[ $num == "1" ]]
 then
-install_ssrpanel
+Install_Ssrpanel_Web_to_Bt
 elif [[ $num == "2" ]]
 then
 install_node
@@ -330,6 +524,9 @@ install_log
 elif [[ $num == "7" ]]
 then
 change_password
+elif [[ $num == "8" ]]
+then
+Install_Ssrpanel_Web
 else 
 echo '输入错误';
 exit 0;
