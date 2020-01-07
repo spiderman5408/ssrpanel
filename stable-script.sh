@@ -342,7 +342,7 @@ Install_Ssrpanel_Web_to_Bt()
 	cd /www/wwwroot/${Input_Web}
 	rm -rf index.html 404.html
 	#下载官方源码
-	git clone https://github.com/spiderman5408/pythona.git tmp && mv tmp/.git . && rm -rf tmp && git reset --hard
+	git clone https://github.com/spiderman5408/ssrpanel_resource.git tmp && mv tmp/.git . && rm -rf tmp && git reset --hard
 	chown -R root:root *
 	chmod -R 755 *
 	chown -R www:www storage
